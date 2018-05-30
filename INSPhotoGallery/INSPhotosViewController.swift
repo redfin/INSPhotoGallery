@@ -24,7 +24,9 @@ public typealias INSPhotosViewControllerNavigateToPhotoHandler = (_ photo: INSPh
 public typealias INSPhotosViewControllerDismissHandler = (_ viewController: INSPhotosViewController) -> ()
 public typealias INSPhotosViewControllerLongPressHandler = (_ photo: INSPhotoViewable, _ gestureRecognizer: UILongPressGestureRecognizer) -> (Bool)
 public typealias INSPhotosViewControllerDeletePhotoHandler = (_ photo: INSPhotoViewable) -> ()
-
+public typealias INSPhotosViewControllerTapHandler = (_ viewController: INSPhotosViewController, _ gestureRecognizer: UITapGestureRecognizer) -> ()
+public typealias INSPhotosViewControllerWillBeginZoomingHandler = (_ viewController: INSPhotosViewController) -> ()
+public typealias INSPhotosViewControllerWillBeginDraggingHandler = (_ viewController: INSPhotosViewController) -> ()
 
 open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSource, UIPageViewControllerDelegate, UIViewControllerTransitioningDelegate {
     
@@ -59,6 +61,21 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
     open var deletePhotoHandler: INSPhotosViewControllerDeletePhotoHandler?
     
     /*
+     * Called when a photo is tapped.
+     */
+    open var tapGestureHandler: INSPhotosViewControllerTapHandler?
+    
+    /*
+     * Called when a photo begins zooming.
+     */
+    open var willBeginZoomingHandler: INSPhotosViewControllerWillBeginZoomingHandler?
+    
+    /*
+     * Called when a photo begins dragging.
+     */
+    open var willBegingDraggingHandler: INSPhotosViewControllerWillBeginDraggingHandler?
+    
+    /*
      * The overlay view displayed over photos, can be changed but must implement INSPhotosOverlayViewable
      */
     open var overlayView: INSPhotosOverlayViewable = INSPhotosOverlayView(frame: CGRect.zero) {
@@ -87,6 +104,24 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
         return currentPhotoViewController?.photo
     }
     
+    open var maximumZoomScale: CGFloat? {
+        didSet {
+            if let maximumZoomScale = maximumZoomScale, let viewControllers = pageViewController.viewControllers as? [INSPhotoViewController] {
+                for vc in viewControllers {
+                    vc.scalingImageView.maximumZoomScale = maximumZoomScale
+                }
+            }
+        }
+    }
+    
+    open var statusBarHidden = false {
+        didSet {
+            UIView.animate(withDuration: 0.25) { () -> Void in
+                self.setNeedsStatusBarAppearanceUpdate()
+            }
+        }
+    }
+    
     // MARK: - Private
     public private(set) var pageViewController: UIPageViewController!
     public private(set) var dataSource: INSPhotosDataSource
@@ -102,7 +137,7 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
     }()
     
     private var interactiveDismissal: Bool = false
-    private var statusBarHidden = false
+    
     private var shouldHandleLongPressGesture = false
     
     private func newCurrentPhotoAfterDeletion(currentPhotoIndex: Int) -> INSPhotoViewable? {
@@ -200,12 +235,6 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        // This fix issue that navigationBar animate to up
-        // when presentingViewController is UINavigationViewController
-        statusBarHidden = true
-        UIView.animate(withDuration: 0.25) { () -> Void in
-            self.setNeedsStatusBarAppearanceUpdate()
-        }
         updateCurrentPhotosInformation()
     }
     
@@ -275,6 +304,10 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
     
     @objc private func handleSingleTapGestureRecognizer(_ gestureRecognizer: UITapGestureRecognizer) {
         overlayView.setHidden(!overlayView.view().isHidden, animated: true)
+        
+        if let tapHandler = tapGestureHandler {
+            tapHandler(self, gestureRecognizer)
+        }
     }
     
     // MARK: - Target Actions
@@ -360,6 +393,27 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
                 menuController.setMenuVisible(true, animated: true)
             }
         }
+        
+        photoViewController.willBeginZoomingHandler = { [weak self] (photoViewController) in
+            guard let weakSelf = self else {
+                return
+            }
+            
+            weakSelf.willBeginZoomingHandler?(weakSelf)
+        }
+        
+        photoViewController.willBeginDraggingHandler = { [weak self] (photoViewController) in
+            guard let weakSelf = self else {
+                return
+            }
+            
+            weakSelf.willBegingDraggingHandler?(weakSelf)
+        }
+        
+        if let maxZoom = maximumZoomScale {
+            photoViewController.scalingImageView.maximumZoomScale = maxZoom
+        }
+        
         return photoViewController
     }
     

@@ -23,10 +23,11 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
     var photo: INSPhotoViewable
     
     var longPressGestureHandler: ((UILongPressGestureRecognizer) -> ())?
+    var willBeginZoomingHandler: ((INSPhotoViewController)->())?
+    var willBeginDraggingHandler: ((INSPhotoViewController)->())?
     
     lazy private(set) var scalingImageView: INSScalingImageView = {
         let scalingImageView = INSScalingImageView()
-        scalingImageView.maximumZoomScale = 3.0
         return scalingImageView
     }()
     
@@ -166,6 +167,7 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
     
     open func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
         scrollView.panGestureRecognizer.isEnabled = true
+        willBeginZoomingHandler?(self)
     }
     
     open func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
@@ -174,5 +176,9 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
         if (scrollView.zoomScale == scrollView.minimumZoomScale) {
             scrollView.panGestureRecognizer.isEnabled = false;
         }
+    }
+    
+    open func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        willBeginDraggingHandler?(self)
     }
 }
