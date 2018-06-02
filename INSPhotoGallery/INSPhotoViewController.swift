@@ -145,7 +145,7 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
         let pointInView = recognizer.location(in: scalingImageView.imageView)
         var newZoomScale = scalingImageView.maximumZoomScale
         
-        if scalingImageView.zoomScale >= scalingImageView.maximumZoomScale || abs(scalingImageView.zoomScale - scalingImageView.maximumZoomScale) <= 0.01 {
+        if abs(scalingImageView.zoomScale - scalingImageView.minimumZoomScale) > 0.01 {
             newZoomScale = scalingImageView.minimumZoomScale
         }
         
