@@ -27,6 +27,7 @@ public class INSPhotosTransitionAnimator: NSObject, UIViewControllerAnimatedTran
     
     var startingViewForAnimation: UIView?
     var endingViewForAnimation: UIView?
+    public var overlayView: UIView?
     
     var animationDurationWithZooming = 0.5
     var animationDurationWithoutZooming = 0.3
@@ -140,6 +141,14 @@ public class INSPhotosTransitionAnimator: NSObject, UIViewControllerAnimatedTran
         containerView.addSubview(startingViewForAnimation)
         containerView.addSubview(endingViewForAnimation)
         
+        var overlaySnapshot: UIView?
+        if let overlay = overlayView {
+            overlaySnapshot = overlay.ins_snapshotView()
+            if let snapshot = overlaySnapshot {
+                containerView.addSubview(snapshot)
+            }
+        }
+        
         // Hide the original ending view and starting view until the completion of the animation.
         endingView.alpha = 0.0
         startingView.alpha = 0.0
@@ -168,6 +177,7 @@ public class INSPhotosTransitionAnimator: NSObject, UIViewControllerAnimatedTran
             startingViewForAnimation.center = translatedEndingViewFinalCenter
             
         }) { result in
+            overlaySnapshot?.removeFromSuperview()
             endingViewForAnimation.removeFromSuperview()
             endingView.alpha = 1.0
             startingView.alpha = 1.0
