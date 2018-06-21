@@ -21,6 +21,7 @@ import UIKit
 
 open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
     var photo: INSPhotoViewable
+    var doubleTapZoomScale: CGFloat = 1.0
     
     var longPressGestureHandler: ((UILongPressGestureRecognizer) -> ())?
     var willBeginZoomingHandler: ((INSPhotoViewController)->())?
@@ -143,10 +144,13 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
     
     @objc private func handleDoubleTapWithGestureRecognizer(_ recognizer: UITapGestureRecognizer) {
         let pointInView = recognizer.location(in: scalingImageView.imageView)
-        var newZoomScale = scalingImageView.maximumZoomScale * 0.5
-        
-        if abs(scalingImageView.zoomScale - scalingImageView.minimumZoomScale) > 0.01 {
+        // default to zoomed in
+        let newZoomScale: CGFloat
+        let isZoomedOut = abs(scalingImageView.zoomScale - scalingImageView.minimumZoomScale) > 0.01
+        if isZoomedOut {
             newZoomScale = scalingImageView.minimumZoomScale
+        } else {
+            newZoomScale = doubleTapZoomScale < scalingImageView.maximumZoomScale ? doubleTapZoomScale : scalingImageView.maximumZoomScale
         }
         
         let scrollViewSize = scalingImageView.bounds.size

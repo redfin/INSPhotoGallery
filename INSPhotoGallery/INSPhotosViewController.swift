@@ -114,6 +114,16 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
         }
     }
     
+    open var doubleTapZoomScale: CGFloat? {
+        didSet {
+            if let doubleTapZoomScale = doubleTapZoomScale, let viewControllers = pageViewController.viewControllers as? [INSPhotoViewController] {
+                for vc in viewControllers {
+                    vc.doubleTapZoomScale = doubleTapZoomScale
+                }
+            }
+        }
+    }
+    
     open var statusBarHidden = false {
         didSet {
             UIView.animate(withDuration: 0.25) { () -> Void in
@@ -412,6 +422,10 @@ open class INSPhotosViewController: UIViewController, UIPageViewControllerDataSo
         
         if let maxZoom = maximumZoomScale {
             photoViewController.scalingImageView.maximumZoomScale = maxZoom
+        }
+        
+        if let doubleTapZoomScale = doubleTapZoomScale {
+            photoViewController.doubleTapZoomScale = doubleTapZoomScale
         }
         
         return photoViewController
