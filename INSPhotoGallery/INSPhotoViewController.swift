@@ -21,7 +21,6 @@ import UIKit
 
 open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
     var photo: INSPhotoViewable
-    var doubleTapZoomScale: CGFloat = 1.0
     
     var longPressGestureHandler: ((UILongPressGestureRecognizer) -> ())?
     var willBeginZoomingHandler: ((INSPhotoViewController)->())?
@@ -146,11 +145,24 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
         let pointInView = recognizer.location(in: scalingImageView.imageView)
         // default to zoomed in
         let newZoomScale: CGFloat
-        let isZoomedOut = abs(scalingImageView.zoomScale - scalingImageView.minimumZoomScale) > 0.01
-        if isZoomedOut {
+        let isZoomedIn = abs(scalingImageView.zoomScale - scalingImageView.minimumZoomScale) > 0.01
+        if isZoomedIn {
             newZoomScale = scalingImageView.minimumZoomScale
         } else {
-            newZoomScale = doubleTapZoomScale < scalingImageView.maximumZoomScale ? doubleTapZoomScale : scalingImageView.maximumZoomScale
+            if let image = scalingImageView.image, scalingImageView.contentSize.height <= scalingImageView.bounds.height {
+                // zoom to max of full height of screen or 2x height
+                let fullHeightZoomScale = scalingImageView.bounds.size.height / image.size.height
+                let doubleHeightZoomScale = scalingImageView.minimumZoomScale * 2
+                newZoomScale = min(max(fullHeightZoomScale,doubleHeightZoomScale), scalingImageView.maximumZoomScale)
+            } else if let image = scalingImageView.image, scalingImageView.contentSize.width <= scalingImageView.bounds.width {
+                // zoom to max of full width of screen or 2x width
+                let fullWidthZoomScale = scalingImageView.bounds.size.width / image.size.width
+                let doubleWidthZoomScale = scalingImageView.minimumZoomScale * 2
+                newZoomScale = min(max(fullWidthZoomScale,doubleWidthZoomScale), scalingImageView.maximumZoomScale)
+            } else {
+                // double the minimum scale zoom
+                newZoomScale = min(scalingImageView.minimumZoomScale * 2,scalingImageView.maximumZoomScale)
+            }
         }
         
         let scrollViewSize = scalingImageView.bounds.size
@@ -180,6 +192,10 @@ open class INSPhotoViewController: UIViewController, UIScrollViewDelegate {
         if (scrollView.zoomScale == scrollView.minimumZoomScale) {
             scrollView.panGestureRecognizer.isEnabled = false;
         }
+    }
+    
+    public func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        scalingImageView.centerScrollViewContents()
     }
     
     open func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
